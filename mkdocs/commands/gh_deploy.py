@@ -107,6 +107,7 @@ def gh_deploy(
 ) -> None:
     if not _is_cwd_git_repo():
         log.error('Cannot deploy - this directory does not appear to be a git repository')
+        raise Abort('Deployment Aborted!')
 
     remote_branch = config.remote_branch
     remote_name = config.remote_name

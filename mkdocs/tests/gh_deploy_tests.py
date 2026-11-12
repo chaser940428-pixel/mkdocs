@@ -22,6 +22,24 @@ class TestGitHubDeploy(unittest.TestCase):
 
         self.assertFalse(gh_deploy._is_cwd_git_repo())
 
+    @mock.patch('mkdocs.commands.gh_deploy._is_cwd_git_repo', return_value=False)
+    @mock.patch('mkdocs.commands.gh_deploy._check_version')
+    @mock.patch('mkdocs.commands.gh_deploy._get_current_sha', return_value='shashas')
+    @mock.patch('mkdocs.commands.gh_deploy._get_remote_url', return_value=(None, None))
+    @mock.patch('ghp_import.ghp_import')
+    def test_deploy_outside_git_repo(self, deploy, remote_url, current_sha, check_version, is_repo):
+        config = load_config()
+        for ignore_version in (False, True):
+            with self.subTest(ignore_version=ignore_version):
+                with self.assertLogs('mkdocs.commands.gh_deploy', level='ERROR') as logs:
+                    with self.assertRaisesRegex(Abort, 'Deployment Aborted!'):
+                        gh_deploy.gh_deploy(config, ignore_version=ignore_version)
+                self.assertIn('does not appear to be a git repository', logs.output[0])
+                check_version.assert_not_called()
+                current_sha.assert_not_called()
+                remote_url.assert_not_called()
+                deploy.assert_not_called()
+
     @mock.patch('subprocess.Popen')
     def test_get_current_sha(self, mock_popeno):
         mock_popeno().communicate.return_value = (b'6d98394\n', b'')
